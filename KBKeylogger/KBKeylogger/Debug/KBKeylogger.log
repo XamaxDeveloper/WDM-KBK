@@ -1,0 +1,11 @@
+﻿  Building 'KBKeylogger' with toolset 'WindowsKernelModeDriver10.0' and the 'Desktop' target platform.
+C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(402,5): warning MSB8038: устранение рисков Spectre включено, однако библиотеки Spectre с устраненными рисками не найдены. Убедитесь, что рабочая нагрузка Visual Studio включает библиотеки Spectre с устраненными рисками. Дополнительные сведения см. в статье https://aka.ms/Ofhn4c.
+  Stamping Debug\KBKeylogger.inf
+  Stamping [Version] section with DriverVer=05/19/2019,12.45.26.767
+  MainFunction.c
+a:\project\kbkeylogger\wdm-kbk\kbkeylogger\kbkeylogger\mainfunction.c(12): error C2220: предупреждение обработано как ошибка - файл "object" не создан
+a:\project\kbkeylogger\wdm-kbk\kbkeylogger\kbkeylogger\mainfunction.c(12): warning C4100: RegistryPath: неиспользованный формальный параметр
+a:\project\kbkeylogger\wdm-kbk\kbkeylogger\kbkeylogger\mainfunction.c(42): warning C4133: функция: несовместимые типы - из "PDEVICE_OBJECT *" в "PFILE_OBJECT *"
+a:\project\kbkeylogger\wdm-kbk\kbkeylogger\kbkeylogger\mainfunction.c(51): warning C4047: функция: "PDEVICE_OBJECT" отличается по уровням косвенного обращения от "PDEVICE_OBJECT *"
+a:\project\kbkeylogger\wdm-kbk\kbkeylogger\kbkeylogger\mainfunction.c(51): warning C4024: IoAttachDeviceToDeviceStack: различные типы для формального и фактического параметров 2
+a:\project\kbkeylogger\wdm-kbk\kbkeylogger\kbkeylogger\mainfunction.c(64): warning C4100: DriverObject: неиспользованный формальный параметр
