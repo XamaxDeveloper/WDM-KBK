@@ -1,12 +1,12 @@
 ﻿  Building 'KBKeylogger' with toolset 'WindowsKernelModeDriver10.0' and the 'Desktop' target platform.
   Stamping x64\Debug\KBKeylogger.inf
-  Stamping [Version] section with DriverVer=05/19/2019,12.55.54.746
+  Stamping [Version] section with DriverVer=05/28/2019,23.50.13.830
   MainFunction.c
   KBKeylogger.vcxproj -> A:\Project\KBKeylogger\WDM-KBK\KBKeylogger\x64\Debug\KBKeylogger.sys
   Done Adding Additional Store
   Successfully signed: A:\Project\KBKeylogger\WDM-KBK\KBKeylogger\x64\Debug\KBKeylogger.sys
   
-  ........................
+  .........................
   Signability test complete.
   
   Errors:

@@ -3,16 +3,15 @@
 ;
 
 [Version]
-Signature="$WINDOWS NT$"
-Class=System
-ClassGuid={4d36e97d-e325-11ce-bfc1-08002be10318}
-Provider=%ManufacturerName%
-DriverVer = 05/19/2019,12.55.54.746
+Signature="$CHICAGO$"
+class=System
+classGuid={4d36e97d-e325-11ce-bfc1-08002be10318}
+Provider=MSFT
+DriverVer = 05/28/2019,23.50.13.830
 CatalogFile=KBKeylogger.cat
 
 [DestinationDirs]
 DefaultDestDir = 12
-
 
 [SourceDisksNames]
 1 = %DiskName%,,,""
@@ -30,3 +29,4 @@ DefaultDestDir = 12
 ManufacturerName="<Your manufacturer name>" ;TODO: Replace with your manufacturer name
 ClassName=""
 DiskName="KBKeylogger Source Disk"
+
