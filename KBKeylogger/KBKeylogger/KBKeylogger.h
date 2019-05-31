@@ -131,6 +131,19 @@ AddDevice(
     IN PDEVICE_OBJECT BusDeviceObject
     );
 
+
+Completion(
+	IN PDEVICE_OBJECT   DeviceObject,
+	IN PIRP             Irp,
+	IN PVOID            Context
+);
+
+NTSTATUS
+ReadCompletion(
+	IN PDEVICE_OBJECT   DeviceObject,
+	IN PIRP             Irp
+);
+
 NTSTATUS
 CreateClose (
     IN PDEVICE_OBJECT DeviceObject,

