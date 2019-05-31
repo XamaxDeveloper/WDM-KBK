@@ -1,7 +1,7 @@
 ﻿  Building 'KBKeylogger' with toolset 'WindowsKernelModeDriver10.0' and the 'Desktop' target platform.
   Stamping x64\Debug\KBKeylogger.inf
-  Stamping [Version] section with DriverVer=05/28/2019,23.50.13.830
-  MainFunction.c
+  Stamping [Version] section with DriverVer=05/31/2019,21.53.3.240
+  KBKeylogger.c
   KBKeylogger.vcxproj -> A:\Project\KBKeylogger\WDM-KBK\KBKeylogger\x64\Debug\KBKeylogger.sys
   Done Adding Additional Store
   Successfully signed: A:\Project\KBKeylogger\WDM-KBK\KBKeylogger\x64\Debug\KBKeylogger.sys
@@ -16,7 +16,7 @@
   None
   
   Catalog generation complete.
-  A:\Project\KBKeylogger\WDM-KBK\KBKeylogger\x64\Debug\KBKeylogger\kbkeylogger.cat
+  A:\Project\KBKeylogger\WDM-KBK\KBKeylogger\x64\Debug\KBKeylogger\kmdfsamples.cat
   Done Adding Additional Store
-  Successfully signed: A:\Project\KBKeylogger\WDM-KBK\KBKeylogger\x64\Debug\KBKeylogger\kbkeylogger.cat
+  Successfully signed: A:\Project\KBKeylogger\WDM-KBK\KBKeylogger\x64\Debug\KBKeylogger\kmdfsamples.cat
   
