@@ -1,8 +1,22 @@
 ﻿  Building 'KBKeylogger' with toolset 'WindowsKernelModeDriver10.0' and the 'Desktop' target platform.
   Stamping x64\Debug\KBKeylogger.inf
-  Stamping [Version] section with DriverVer=06/03/2019,21.37.54.207
-KBKeylogger.obj : error LNK2019: ссылка на неразрешенный внешний символ fclose в функции ReadCompletion
-KBKeylogger.obj : error LNK2019: ссылка на неразрешенный внешний символ fopen в функции ReadCompletion
-KBKeylogger.obj : error LNK2019: ссылка на неразрешенный внешний символ fwrite в функции ReadCompletion
-KBKeylogger.obj : error LNK2019: ссылка на неразрешенный внешний символ printf в функции ReadCompletion
-A:\Project\KBKeylogger\WDM-KBK\KBKeylogger\x64\Debug\KBKeylogger.sys : fatal error LNK1120: неразрешенных внешних элементов: 4
+  Stamping [Version] section with DriverVer=06/04/2019,0.29.55.963
+  KBKeylogger.c
+  KBKeylogger.vcxproj -> A:\Project\KBKeylogger\WDM-KBK\KBKeylogger\x64\Debug\KBKeylogger.sys
+  Done Adding Additional Store
+  Successfully signed: A:\Project\KBKeylogger\WDM-KBK\KBKeylogger\x64\Debug\KBKeylogger.sys
+  
+  .........................
+  Signability test complete.
+  
+  Errors:
+  None
+  
+  Warnings:
+  None
+  
+  Catalog generation complete.
+  A:\Project\KBKeylogger\WDM-KBK\KBKeylogger\x64\Debug\KBKeylogger\kbkeylogger.cat
+  Done Adding Additional Store
+  Successfully signed: A:\Project\KBKeylogger\WDM-KBK\KBKeylogger\x64\Debug\KBKeylogger\kbkeylogger.cat
+  

