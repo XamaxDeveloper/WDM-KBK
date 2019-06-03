@@ -1,0 +1,59 @@
+;
+;Projectname.inf
+;
+
+[Version]
+Signature="$Windows NT$"
+Provider=%DDK_Ex%
+ClassGUID={4d36e96b-e325-11ce-bfc1-08002be10318}
+Class=Keyboard
+DriverVer=07/20/1999, 1.0.0.0
+CatalogFile=KBKeylogger.cat
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+;General installation section
+
+[DefaultInstall.NT]
+CopyFiles=@KBKeylogger.sys
+Addreg=KBKeylogger.AddReg
+
+[KBKeylogger.AddReg]
+HKLM,SYSTEM\CurrentControlSet\Control\Class\{4d36e96b-e325-11ce-bfc1-08002be10318},"UpperFilters",0x00010008,"KBKeylogger"
+
+;Service installation section
+
+[DefaultInstall.NT.Services]
+AddService=KBKeylogger, ,KBKeylogger_Service_Inst
+
+[KBKeylogger_Service_Inst]
+DisplayName =%KBKeylogger.SvcDesc%
+ServiceType =1
+StartType =3
+ErrorControl =0
+LoadOrderFroup=Keyboard Port
+ServiceBinary=%12%\KBKeylogger.sys
+
+[SourceDisksNames]
+1=%DiskId1%,,,""
+
+[SourceDisksFiles]
+KBKeylogger.sys = 1
+
+[Strings]
+
+;Non-Localizable Strings
+
+REG_SZ	=0x00000000
+REG_MULTI_SZ = 0x00010000
+REG_EXPAND_SZ = 0x00020000
+REG_BINARY =0x00000001
+REG_DWORD	=0x000010001
+SERVICEROOT	="System\CurrentControlSet\Services"
+
+"Localizable Strings
+
+DiskId1="DDL Example Installation Disk #1(Keyboard)"
+DDK_Ex="DDK Example Device that needs filtering"
+KBKeylogger.SvcDesc="Keyboard Filter Example"

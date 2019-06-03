@@ -138,10 +138,12 @@
     <ClCompile>
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
     </ClCompile>
+    <Link>
+      <AssemblyLinkResource>
+      </AssemblyLinkResource>
+      <AdditionalDependencies>%(AdditionalDependencies);$(KernelBufferOverflowLib);$(DDK_LIB_PATH)ntoskrnl.lib;$(DDK_LIB_PATH)hal.lib;$(DDK_LIB_PATH)wmilib.lib;</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <Inf Include="KBKeylogger.inx" />
-  </ItemGroup>
   <ItemGroup>
     <FilesToPackage Include="$(TargetPath)" />
   </ItemGroup>
@@ -150,6 +152,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="KBKeylogger.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Inf Include="KBKeylogger.inf" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

