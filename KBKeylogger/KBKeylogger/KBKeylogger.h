@@ -68,6 +68,7 @@ NTSTATUS            FileStatus;
 HANDLE              TestFile;
 OBJECT_ATTRIBUTES   ObjAttr;
 IO_STATUS_BLOCK     IoStatus;
+FILE_STANDARD_INFORMATION FileInfo;
 UNICODE_STRING      TestName;
 typedef struct _DEVICE_EXTENSION
 {

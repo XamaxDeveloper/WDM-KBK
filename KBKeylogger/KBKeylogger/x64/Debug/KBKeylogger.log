@@ -1,6 +1,6 @@
 ﻿  Building 'KBKeylogger' with toolset 'WindowsKernelModeDriver10.0' and the 'Desktop' target platform.
   Stamping x64\Debug\KBKeylogger.inf
-  Stamping [Version] section with DriverVer=06/04/2019,0.29.55.963
+  Stamping [Version] section with DriverVer=06/04/2019,2.57.33.291
   KBKeylogger.c
   KBKeylogger.vcxproj -> A:\Project\KBKeylogger\WDM-KBK\KBKeylogger\x64\Debug\KBKeylogger.sys
   Done Adding Additional Store
