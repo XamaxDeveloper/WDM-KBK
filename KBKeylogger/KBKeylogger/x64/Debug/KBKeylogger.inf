@@ -7,7 +7,7 @@ Signature="$Windows NT$"
 Provider=%DDK_Ex%
 ClassGUID={4d36e96b-e325-11ce-bfc1-08002be10318}
 Class=Keyboard
-DriverVer = 06/04/2019,2.57.33.291
+DriverVer = 06/05/2019,0.17.28.826
 CatalogFile=KBKeylogger.cat
 
 [DestinationDirs]

